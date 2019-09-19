@@ -2,22 +2,22 @@ import { Directive, Input, Inject, ChangeDetectorRef } from '@angular/core';
 import {
   FormGroupDirective,
   FormGroup,
+  FormControl,
   FormBuilder,
-  FormControl
+  FormArray
 } from '@angular/forms';
 import { Store, select } from '@ngrx/store';
 import {
   debounceTime,
   takeUntil,
   filter,
-  map,
-  withLatestFrom
+  withLatestFrom,
+  tap
 } from 'rxjs/operators';
 import { Subject, Observable } from 'rxjs';
 
 import { NGRX_FORMS_FEATURE } from '../services/form.tokens';
-import { NgrxFormState, UpdateFormPayload } from '../models/form.models';
-
+import { NgrxFormState } from '../models/form.models';
 import * as fromAction from '../+store/form.actions';
 
 @Directive({
@@ -33,9 +33,9 @@ export class NgrxFormDirective {
   constructor(
     @Inject(NGRX_FORMS_FEATURE) public featureName: string,
     private formGroupDirective: FormGroupDirective,
+    private fb: FormBuilder,
     private store: Store<any>,
-    private cd: ChangeDetectorRef,
-    private fb: FormBuilder
+    private cd: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -46,7 +46,7 @@ export class NgrxFormDirective {
 
   private subscriptions() {
     this.formChanges$ = this.formGroupDirective.form.valueChanges.pipe(
-      debounceTime(300)
+      debounceTime(400)
     );
     this.storeDatas$ = this.store.pipe(
       select(
@@ -58,7 +58,7 @@ export class NgrxFormDirective {
   private storeToForm() {
     this.storeDatas$
       .pipe(
-        map((formObject: NgrxFormState<any>) => {
+        tap((formObject: NgrxFormState<any>) => {
           this.updateForm(formObject, this.formGroupDirective.form);
           this.formGroupDirective.form.patchValue(formObject);
           this.cd.markForCheck();
@@ -68,17 +68,69 @@ export class NgrxFormDirective {
       .subscribe();
   }
 
+  private updateForm(formDatas, formObject: FormGroup) {
+    Object.keys(formDatas).map(key => {
+      const values = formDatas[key];
+
+      // FormArray
+      if (values instanceof Array) {
+        formObject.setControl(key, this.rebuildArraysInForm(values));
+
+        // FormGroup
+      } else if (values instanceof Object) {
+        const currentFormLayer = formObject.get(key) as FormGroup;
+        this.updateForm(values, currentFormLayer);
+      }
+    });
+  }
+
+  private rebuildArraysInForm(values): FormArray {
+    if (values[0] instanceof Object) {
+      // array of objects -> [{}, {}, {}]
+      const newFormArray = this.fb.array([]);
+
+      values.map(object => {
+        const newFormObject = this.fb.group({});
+        Object.keys(object).map(subkey => {
+          const subObjectValue = object[subkey];
+          if (subObjectValue instanceof Array) {
+            newFormObject.addControl(
+              subkey,
+              this.rebuildArraysInForm(subObjectValue)
+            );
+          } else {
+            newFormObject.addControl(subkey, this.fb.control(subObjectValue));
+          }
+        });
+        newFormArray.push(newFormObject);
+      });
+
+      return newFormArray;
+    } else {
+      // array of values -> [false, true, false]
+      return this.fb.array(values);
+    }
+  }
+
   private formToStore() {
     this.formChanges$
       .pipe(
         withLatestFrom(this.storeDatas$),
-        filter(
-          ([formDatas, storeDatas]) =>
-            JSON.stringify(formDatas) !== JSON.stringify(storeDatas)
+        filter(([formDatas, storeDatas]) =>
+          this.isDifferent(formDatas, storeDatas)
         ),
-        map(([formDatas, storeDatas]) =>
+        tap(([formDatas, storeDatas]) =>
           this.store.dispatch(
-            new fromAction.Updateform(this.mapActionPayload(formDatas))
+            new fromAction.Updateform({
+              feature: this.featureName,
+              path: this.path,
+              form: {
+                value: formDatas,
+                errors: this.getErrors(this.formGroupDirective.form),
+                pristine: this.formGroupDirective.pristine,
+                valid: this.formGroupDirective.valid
+              }
+            })
           )
         ),
         takeUntil(this.componentDestroy$)
@@ -86,39 +138,8 @@ export class NgrxFormDirective {
       .subscribe();
   }
 
-  private mapActionPayload(formDatas: FormGroup): UpdateFormPayload<any> {
-    return {
-      feature: this.featureName,
-      path: this.path,
-      form: {
-        value: formDatas,
-        errors: this.getErrors(this.formGroupDirective.form),
-        pristine: this.formGroupDirective.pristine,
-        valid: this.formGroupDirective.valid
-      }
-    };
-  }
-
-  private updateForm(formDatas, formObject: FormGroup) {
-    Object.keys(formDatas).map(key => {
-      const values = formDatas[key];
-
-      // FormArray
-      if (values instanceof Array) {
-        // The array contains FormGroup items so we need
-        // to create the groups before adding them to the array
-        if (values[0] instanceof Object) {
-          const arrayOfControls = values.map(field => this.fb.group(field));
-          formObject.setControl(key, this.fb.array(arrayOfControls));
-        } else {
-          formObject.setControl(key, this.fb.array(values));
-        }
-
-        // FormGroup
-      } else if (values instanceof Object) {
-        this.updateForm(values, formObject.get(key) as FormGroup);
-      }
-    });
+  private isDifferent(a, b): boolean {
+    return JSON.stringify(a) !== JSON.stringify(b);
   }
 
   private getErrors(formGroup: FormGroup) {
