@@ -18,7 +18,7 @@ import { Subject, Observable } from 'rxjs';
 import { NGRX_FORMS_FEATURE } from '../services/form.tokens';
 import { NgrxFormState, UpdateFormPayload } from '../models/form.models';
 
-import * as fromAction from '../store/form.actions';
+import * as fromAction from '../+store/form.actions';
 
 @Directive({
   selector: '[NgrxFormConnect]'
