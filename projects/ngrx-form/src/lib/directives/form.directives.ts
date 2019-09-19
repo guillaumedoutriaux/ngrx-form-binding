@@ -121,14 +121,16 @@ export class NgrxFormDirective {
         ),
         tap(([formDatas, storeDatas]) =>
           this.store.dispatch(
-            new fromAction.Updateform({
-              feature: this.featureName,
-              path: this.path,
-              form: {
-                value: formDatas,
-                errors: this.getErrors(this.formGroupDirective.form),
-                pristine: this.formGroupDirective.pristine,
-                valid: this.formGroupDirective.valid
+            fromAction.updateform({
+              payload: {
+                feature: this.featureName,
+                path: this.path,
+                form: {
+                  value: formDatas,
+                  errors: this.getErrors(this.formGroupDirective.form),
+                  pristine: this.formGroupDirective.pristine,
+                  valid: this.formGroupDirective.valid
+                }
               }
             })
           )
