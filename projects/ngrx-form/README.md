@@ -105,9 +105,7 @@ import {
 Use the `NgrxFormConnect` directive to bind your form group to the store.
 
 ```html
-<form [formGroup]="myFormGroup" NgrxFormConnect="formNameA">
-  ...
-</form>
+<form [formGroup]="myFormGroup" NgrxFormConnect="formNameA">...</form>
 ```
 
 The form name must be the same that the one provided in `NgrxFormReducer` array.
@@ -120,12 +118,8 @@ return {
 ```
 
 ```html
-<form [formGroup]="myFormGroupA" NgrxFormConnect="formNameA">
-  ...
-</form>
-<form [formGroup]="myFormGroupA" NgrxFormConnect="formNameB">
-  ...
-</form>
+<form [formGroup]="myFormGroupA" NgrxFormConnect="formNameA">...</form>
+<form [formGroup]="myFormGroupA" NgrxFormConnect="formNameB">...</form>
 ```
 
 ## API
@@ -154,6 +148,37 @@ export interface UpdateFormPayload<T> {
 ```
 
 ## Action
+
+**Important** : Version 0.1.1 is now compatible with ngrx v8.x and a new action is available :
+
+- updateform (v.8 with action creator)
+- Updateform (older syntaxe based on a class)
+
+We recommend to use the new syntax but both are still perfectly valid.
+
+`updateform` : [v8.x] the action used to update the store.
+The payload must contains :
+
+- the feature name
+- the path of the form state (featurename.pathname --> ie the form name)
+- the form datas
+
+```javascript
+this.store.dispatch(
+  updateform({
+    payload:
+    {
+      feature: 'theFeatureName',
+      path: 'theFormName',
+      form: {
+        value: { /* the form datas */},
+        errors: {},
+        pristine: false,
+        valid: false
+    }
+  })
+)
+```
 
 `Updateform` : the action used to update the store.
 The payload must contains :

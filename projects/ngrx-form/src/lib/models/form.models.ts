@@ -1,8 +1,8 @@
 export interface NgrxFormState<T> {
   value: T;
   errors?: { [fieldName: string]: string };
-  pristine?: Boolean;
-  valid?: Boolean;
+  pristine?: boolean;
+  valid?: boolean;
 }
 
 export interface UpdateFormPayload<T> {

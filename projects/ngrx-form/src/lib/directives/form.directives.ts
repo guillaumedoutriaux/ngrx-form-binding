@@ -24,11 +24,11 @@ import * as fromAction from '../+store/form.actions';
   selector: '[NgrxFormConnect]'
 })
 export class NgrxFormDirective {
-  @Input('NgrxFormConnect') path: string;
+  @Input('NgrxFormConnect') path!: string;
 
   private componentDestroy$ = new Subject<boolean>();
-  private formChanges$: Observable<FormGroup>;
-  private storeDatas$: Observable<NgrxFormState<any>>;
+  private formChanges$!: Observable<FormGroup>;
+  private storeDatas$!: Observable<NgrxFormState<any>>;
 
   constructor(
     @Inject(NGRX_FORMS_FEATURE) public featureName: string,
@@ -49,9 +49,13 @@ export class NgrxFormDirective {
       debounceTime(400)
     );
     this.storeDatas$ = this.store.pipe(
-      select(
-        (data: NgrxFormState<any>) => data[this.featureName][this.path].value
-      )
+      // select((data: NgrxFormState<any>) => {
+      select((data: any) => {
+        const featureName = this.featureName;
+        const feature = data[featureName];
+
+        return feature[this.path].value as any;
+      })
     );
   }
 
@@ -68,8 +72,8 @@ export class NgrxFormDirective {
       .subscribe();
   }
 
-  private updateForm(formDatas, formObject: FormGroup) {
-    Object.keys(formDatas).map(key => {
+  private updateForm(formDatas: any, formObject: FormGroup) {
+    Object.keys(formDatas).map((key) => {
       const values = formDatas[key];
 
       // FormArray
@@ -84,14 +88,14 @@ export class NgrxFormDirective {
     });
   }
 
-  private rebuildArraysInForm(values): FormArray {
+  private rebuildArraysInForm(values: any): FormArray {
     if (values[0] instanceof Object) {
       // array of objects -> [{}, {}, {}]
-      const newFormArray = this.fb.array([]);
+      const newFormArray: any = this.fb.array([]);
 
-      values.map(object => {
+      values.map((object: any) => {
         const newFormObject = this.fb.group({});
-        Object.keys(object).map(subkey => {
+        Object.keys(object).map((subkey) => {
           const subObjectValue = object[subkey];
           if (subObjectValue instanceof Array) {
             newFormObject.addControl(
@@ -128,8 +132,10 @@ export class NgrxFormDirective {
                 form: {
                   value: formDatas,
                   errors: this.getErrors(this.formGroupDirective.form),
-                  pristine: this.formGroupDirective.pristine,
-                  valid: this.formGroupDirective.valid
+                  pristine: this.formGroupDirective.pristine as
+                    | boolean
+                    | undefined,
+                  valid: this.formGroupDirective.valid as boolean | undefined
                 }
               }
             })
@@ -140,11 +146,11 @@ export class NgrxFormDirective {
       .subscribe();
   }
 
-  private isDifferent(a, b): boolean {
+  private isDifferent(a: any, b: any): boolean {
     return JSON.stringify(a) !== JSON.stringify(b);
   }
 
-  private getErrors(formGroup: FormGroup) {
+  private getErrors(formGroup: FormGroup): any {
     return Object.keys(formGroup.controls).reduce((acc, key) => {
       const control = formGroup.get(key);
       acc = acc === undefined ? {} : acc;
@@ -159,7 +165,7 @@ export class NgrxFormDirective {
   }
 
   ngOnDestroy() {
-    this.componentDestroy$.next();
+    this.componentDestroy$.next(true);
     this.componentDestroy$.complete();
   }
 }
