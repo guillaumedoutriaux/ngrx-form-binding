@@ -6,18 +6,18 @@ import { NGRX_FORMS_FEATURE } from './services/form.tokens';
 @NgModule({
   declarations: [NgrxFormDirective],
   exports: [NgrxFormDirective],
-  imports: []
+  imports: [],
 })
 export class NgrxFormModule {
-  static forFeature(feature: string): ModuleWithProviders<any> {
+  static forFeature(feature: string): ModuleWithProviders<NgrxFormModule> {
     return {
       ngModule: NgrxFormModule,
       providers: [
         {
           provide: NGRX_FORMS_FEATURE,
-          useValue: feature
-        }
-      ]
+          useValue: feature,
+        },
+      ],
     };
   }
 }

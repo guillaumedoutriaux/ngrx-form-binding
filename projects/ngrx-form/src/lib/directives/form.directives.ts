@@ -1,10 +1,16 @@
-import { Directive, Input, Inject, ChangeDetectorRef } from '@angular/core';
+import {
+  Directive,
+  Input,
+  Inject,
+  ChangeDetectorRef,
+  PLATFORM_ID,
+} from '@angular/core';
 import {
   FormGroupDirective,
   FormGroup,
   FormControl,
   FormBuilder,
-  FormArray
+  FormArray,
 } from '@angular/forms';
 import { Store, select } from '@ngrx/store';
 import {
@@ -12,16 +18,18 @@ import {
   takeUntil,
   filter,
   withLatestFrom,
-  tap
+  tap,
 } from 'rxjs/operators';
 import { Subject, Observable } from 'rxjs';
 
 import { NGRX_FORMS_FEATURE } from '../services/form.tokens';
 import { NgrxFormState } from '../models/form.models';
 import * as fromAction from '../+store/form.actions';
+import { isPlatformBrowser } from '@angular/common';
+import { platformBrowser } from '@angular/platform-browser';
 
 @Directive({
-  selector: '[NgrxFormConnect]'
+  selector: '[NgrxFormConnect]',
 })
 export class NgrxFormDirective {
   @Input('NgrxFormConnect') path!: string;
@@ -32,6 +40,7 @@ export class NgrxFormDirective {
 
   constructor(
     @Inject(NGRX_FORMS_FEATURE) public featureName: string,
+    @Inject(PLATFORM_ID) private platformId: string,
     private formGroupDirective: FormGroupDirective,
     private fb: FormBuilder,
     private store: Store<any>,
@@ -39,9 +48,11 @@ export class NgrxFormDirective {
   ) {}
 
   ngOnInit() {
-    this.subscriptions();
-    this.storeToForm();
-    this.formToStore();
+    if (isPlatformBrowser(this.platformId)) {
+      this.subscriptions();
+      this.storeToForm();
+      this.formToStore();
+    }
   }
 
   private subscriptions() {
@@ -135,9 +146,9 @@ export class NgrxFormDirective {
                   pristine: this.formGroupDirective.pristine as
                     | boolean
                     | undefined,
-                  valid: this.formGroupDirective.valid as boolean | undefined
-                }
-              }
+                  valid: this.formGroupDirective.valid as boolean | undefined,
+                },
+              },
             })
           )
         ),

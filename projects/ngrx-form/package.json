@@ -1,6 +1,6 @@
 {
   "name": "@yoozly/ngrx-form",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": "Guillaume Doutriaux",
   "description": "Angular Lib that binds reactive-forms and @ngrx/store together.",
   "homepage": "https://github.com/guillaumedoutriaux/ngrx-form-binding",
